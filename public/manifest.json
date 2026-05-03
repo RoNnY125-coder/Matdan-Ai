@@ -1,0 +1,16 @@
+{
+  "name": "Matdan AI",
+  "short_name": "Matdan",
+  "description": "AI-powered civic education platform for India's election process",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d0d0d",
+  "theme_color": "#FF6B1A",
+  "icons": [
+    {
+      "src": "/icons.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512"
+    }
+  ]
+}

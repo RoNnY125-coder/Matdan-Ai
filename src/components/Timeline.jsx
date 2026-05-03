@@ -1,7 +1,16 @@
+/**
+ * @fileoverview Timeline component outlining the election process phases.
+ */
+
 import React, { useEffect, useRef } from 'react';
 import { electionData } from '../data/electionData';
 
-export default function Timeline() {
+/**
+ * Timeline component displaying the steps of the Indian election process.
+ * Uses an IntersectionObserver to animate items as they scroll into view.
+ * @returns {React.ReactElement} The rendered Timeline component.
+ */
+const Timeline = React.memo(() => {
   const itemRefs = useRef([]);
 
   useEffect(() => {
@@ -24,19 +33,21 @@ export default function Timeline() {
   }, []);
 
   return (
-    <section className="section" id="process">
+    <section className="section" id="process" aria-labelledby="timeline-heading">
       <div className="section-header animate-fade-up">
         <span className="section-label">How India Votes</span>
-        <h2>The Election Process</h2>
+        <h2 id="timeline-heading">The Election Process</h2>
       </div>
-      <div className="timeline">
+      <div className="timeline" role="list">
         {electionData.phases.map((phase, index) => (
           <div 
             className="timeline-item" 
             key={phase.id}
             ref={(el) => (itemRefs.current[index] = el)}
+            role="listitem"
+            tabIndex="0"
           >
-            <div className="timeline-marker">
+            <div className="timeline-marker" aria-hidden="true">
               <span>{phase.id}</span>
             </div>
             <div className="timeline-content">
@@ -48,4 +59,9 @@ export default function Timeline() {
       </div>
     </section>
   );
-}
+});
+
+Timeline.displayName = 'Timeline';
+
+export default Timeline;
+

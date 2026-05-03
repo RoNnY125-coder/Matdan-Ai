@@ -1,3 +1,7 @@
+/**
+ * @fileoverview Contains the core election knowledge base and system prompt for Matdan AI.
+ */
+
 export const electionData = {
   overview: {
     registeredVoters: "969 million+",

@@ -1,22 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, ArrowLeft, Maximize2 } from 'lucide-react';
-import { marked } from 'marked';
-import DOMPurify from 'dompurify';
-import QuickChips from './QuickChips';
+/**
+ * @fileoverview Main Chatbot component for Matdan AI.
+ */
+
+import React, { useState, useCallback } from 'react';
+import ChatHeader from './ChatHeader';
+import ChatMessages from './ChatMessages';
+import ChatInput from './ChatInput';
 import { SYSTEM_PROMPT } from '../data/electionData';
 
-marked.setOptions({
-  breaks: true,
-  gfm: true
-});
-
-const API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-console.log("API KEY loaded:", API_KEY ? "YES" : "MISSING");
-
+// API call function is defined outside to prevent recreation
 const sendToAI = async (userMessage) => {
   const API_KEY = import.meta.env.VITE_GROQ_API_KEY;
-
-  console.log("Key loaded:", API_KEY ? "YES" : "NO");
 
   if (!API_KEY) {
     return "⚠️ VITE_GROQ_API_KEY missing in .env file.";
@@ -40,14 +34,12 @@ const sendToAI = async (userMessage) => {
     });
 
     const data = await response.json();
-    console.log("Groq full response:", JSON.stringify(data));
 
     if (!response.ok) {
       return `⚠️ API Error ${response.status}: ${data?.error?.message ?? JSON.stringify(data)}`;
     }
 
     const text = data?.choices?.[0]?.message?.content;
-    console.log("Extracted text:", text);
 
     if (!text || text.trim() === "") {
       return "⚠️ Groq returned empty content. Check console for full response.";
@@ -61,7 +53,11 @@ const sendToAI = async (userMessage) => {
   }
 };
 
-export default function Chatbot() {
+/**
+ * Chatbot component integrating header, messages, and input.
+ * @returns {React.ReactElement} The rendered Chatbot component.
+ */
+const Chatbot = React.memo(() => {
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -72,26 +68,26 @@ export default function Chatbot() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const messagesContainerRef = useRef(null);
+  const [isRateLimited, setIsRateLimited] = useState(false);
 
-  const scrollToBottom = () => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
-    }
-  };
+  const handleSend = useCallback(async (text = input) => {
+    const rawMessage = text || input;
+    
+    // Validate that message is not empty or whitespace
+    if (!rawMessage.trim() || isLoading || isRateLimited) return;
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSend = async (text = input) => {
-    if (!text.trim() || isLoading) return;
-
-    const userMessage = text.trim();
+    // Input sanitization: limit to 500 characters
+    const sanitized = rawMessage.trim().slice(0, 500);
     setInput('');
 
-    setMessages(prev => [...prev, { id: Date.now(), sender: 'user', text: userMessage }]);
+    setMessages(prev => [...prev, { id: Date.now() + Math.random(), sender: 'user', text: sanitized }]);
     setIsLoading(true);
+    
+    // Rate limiting: disable send button for 2 seconds
+    setIsRateLimited(true);
+    setTimeout(() => {
+      setIsRateLimited(false);
+    }, 2000);
 
     try {
       const historyString = messages
@@ -100,134 +96,51 @@ export default function Chatbot() {
         .join('\n\n');
         
       const fullPromptContext = historyString 
-        ? `${historyString}\n\nUser: ${userMessage}` 
-        : `User: ${userMessage}`;
+        ? `${historyString}\n\nUser: ${sanitized}` 
+        : `User: ${sanitized}`;
 
       const reply = await sendToAI(fullPromptContext);
       
       setMessages(prev => [
         ...prev,
-        { id: Date.now(), sender: 'ai', text: reply }
+        { id: Date.now() + Math.random(), sender: 'ai', text: reply }
       ]);
     } catch (error) {
       console.error(error);
       setMessages(prev => [
         ...prev,
-        { id: Date.now(), sender: 'ai', text: "⚠️ Could not reach the AI. Check your API key in .env or your network." }
+        { id: Date.now() + Math.random(), sender: 'ai', text: "⚠️ Could not reach the AI. Check your API key or network." }
       ]);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const renderMarkdown = (text) => {
-    const rawMarkup = marked(text);
-    const cleanMarkup = DOMPurify.sanitize(rawMarkup);
-    return { __html: cleanMarkup };
-  };
+  }, [input, isLoading, isRateLimited, messages]);
 
   return (
-    <section className="section animate-fade-up" style={{ animationDelay: '0.2s' }} id="chat">
+    <section className="section animate-fade-up" style={{ animationDelay: '0.2s' }} id="chat" aria-labelledby="chat-heading">
       <div className="section-header">
         <span className="section-label">Interactive Guide</span>
-        <h2>Ask Matdan AI</h2>
+        <h2 id="chat-heading">Ask Matdan AI</h2>
       </div>
       
-      {isExpanded && <div className="chatbot-backdrop" onClick={() => setIsExpanded(false)} />}
+      {isExpanded && <div className="chatbot-backdrop" onClick={() => setIsExpanded(false)} aria-hidden="true" />}
       <div className={`chatbot-container ${isExpanded ? 'expanded' : ''}`}>
-        <div className="chat-header">
-          <div className="header-left">
-            {isExpanded && (
-              <button className="btn-back" onClick={() => setIsExpanded(false)}>
-                <ArrowLeft size={18} />
-                <span>Back</span>
-              </button>
-            )}
-          </div>
-
-          <div className="chat-title">
-            <span>🏛️</span>
-            Matdan AI
-          </div>
-
-          <div className="header-right">
-            {!isExpanded && (
-              <button className="btn-icon" onClick={() => setIsExpanded(true)} title="Expand Chat">
-                <Maximize2 size={18} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="chat-messages" ref={messagesContainerRef}>
-          {messages.map((msg) => (
-            <div key={msg.id} className={`message-row ${msg.sender}`}>
-              <div className={`message-bubble ${msg.sender}`}>
-                <div className="message-info">
-                  <div className="message-avatar">
-                    {msg.sender === 'ai' ? '🏛️' : 'U'}
-                  </div>
-                  <span className="message-author">
-                    {msg.sender === 'ai' ? 'Matdan AI' : 'You'}
-                  </span>
-                </div>
-                {msg.sender === 'ai' ? (
-                   <div 
-                     className="markdown-body" 
-                     dangerouslySetInnerHTML={renderMarkdown(msg.text)} 
-                   />
-                ) : (
-                  <div>{msg.text}</div>
-                )}
-              </div>
-            </div>
-          ))}
-          
-          {isLoading && (
-            <div className="message-row ai">
-              <div className="message-bubble ai loading">
-                <div className="message-info">
-                  <div className="message-avatar">🏛️</div>
-                  <span className="message-author">Matdan AI</span>
-                </div>
-                <div className="typing-dots">
-                  <span></span><span></span><span></span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="chat-input-area">
-          {messages.length === 1 && <QuickChips onSelect={handleSend} />}
-          
-          <div className="input-wrapper">
-            <input
-              type="text"
-              value={input}
-              onFocus={() => setIsExpanded(true)}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask about elections, voter registration..."
-              disabled={isLoading}
-            />
-            <button 
-              className="btn-send" 
-              onClick={() => handleSend()}
-              disabled={!input.trim() || isLoading}
-            >
-              <Send size={18} />
-            </button>
-          </div>
-        </div>
+        <ChatHeader isExpanded={isExpanded} setIsExpanded={setIsExpanded} />
+        <ChatMessages messages={messages} isLoading={isLoading} />
+        <ChatInput 
+          input={input} 
+          setInput={setInput} 
+          isLoading={isLoading} 
+          handleSend={handleSend}
+          setIsExpanded={setIsExpanded}
+          showQuickChips={messages.length === 1}
+          isRateLimited={isRateLimited}
+        />
       </div>
     </section>
   );
-}
+});
+
+Chatbot.displayName = 'Chatbot';
+
+export default Chatbot;
