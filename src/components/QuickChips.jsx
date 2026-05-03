@@ -13,13 +13,35 @@ import { electionData } from '../data/electionData';
  * @returns {React.ReactElement} The rendered QuickChips component.
  */
 const QuickChips = React.memo(({ onSelect }) => {
+  const handleKeyDown = (e, prompt, idx) => {
+    const chips = document.querySelectorAll('.prompt-chip');
+    if (e.key === 'ArrowRight') {
+      const next = chips[idx + 1] || chips[0];
+      next.focus();
+    } else if (e.key === 'ArrowLeft') {
+      const prev = chips[idx - 1] || chips[chips.length - 1];
+      prev.focus();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleClick(prompt);
+    }
+  };
+
+  const handleClick = (prompt) => {
+    if (window.gtag) {
+      window.gtag('event', 'chip_clicked', { chip_text: prompt });
+    }
+    onSelect(prompt);
+  };
+
   return (
-    <div className="quick-prompts" aria-label="Suggested Prompts">
+    <div className="quick-prompts" aria-label="Suggested Prompts" role="group">
       {electionData.quickPrompts.map((prompt, idx) => (
         <button 
           key={idx} 
           className="prompt-chip"
-          onClick={() => onSelect(prompt)}
+          onClick={() => handleClick(prompt)}
+          onKeyDown={(e) => handleKeyDown(e, prompt, idx)}
           aria-label={`Ask: ${prompt}`}
         >
           {prompt}

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import React from 'react';
 import Chatbot from '../components/Chatbot';
 
 describe('Chatbot Component', () => {
@@ -57,7 +56,7 @@ describe('Chatbot Component', () => {
     vi.stubEnv('VITE_GROQ_API_KEY', 'fake-key');
 
     // Mock global fetch to return an error
-    global.fetch = vi.fn(() =>
+    globalThis.fetch = vi.fn(() =>
       Promise.resolve({
         ok: false,
         json: () => Promise.resolve({ error: { message: "Unauthorized" } }),
@@ -72,7 +71,7 @@ describe('Chatbot Component', () => {
     fireEvent.click(button);
     
     // Wait for async state update
-    const errorMsg = await screen.findByText(/API Error/i, {}, { timeout: 3000 });
+    const errorMsg = await screen.findByText(/Both Groq and Gemini APIs failed/i, {}, { timeout: 3000 });
     expect(errorMsg).toBeInTheDocument();
     
     vi.unstubAllEnvs();

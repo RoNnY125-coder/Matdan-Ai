@@ -13,6 +13,7 @@ import './index.css';
 const Timeline = lazy(() => import('./components/Timeline'));
 const Chatbot = lazy(() => import('./components/Chatbot'));
 
+
 /**
  * App component rendering the main application layout.
  * @returns {React.ReactElement} The rendered App component.

@@ -113,31 +113,95 @@ npm run preview
 ```
 matdan/
 ├── public/
-│   └── favicon.svg
+│   ├── favicon.svg
+│   ├── manifest.json
+│   ├── robots.txt
+│   ├── sitemap.xml
+│   └── sw.js
 ├── src/
-│   ├── components/
-│   │   ├── Header.jsx          # Nav bar with logo + links
-│   │   ├── Hero.jsx            # Landing hero section
-│   │   ├── StatsBar.jsx        # 2024 election stats strip
-│   │   ├── QuickChips.jsx      # One-tap question chips
-│   │   ├── Chatbot.jsx         # AI chat interface (Groq)
-│   │   ├── Timeline.jsx        # Interactive election timeline
-│   │   ├── PhaseCards.jsx      # Clickable phase grid
-│   │   └── Footer.jsx          # Footer with links
+│   ├── __tests__/              # Vitest test files
+│   ├── components/             # React components
+│   │   ├── index.js            # Component barrel file
+│   │   ├── Header.jsx          
+│   │   ├── Hero.jsx            
+│   │   ├── StatsBar.jsx        
+│   │   ├── QuickChips.jsx      
+│   │   ├── Chatbot.jsx         
+│   │   ├── Timeline.jsx        
+│   │   └── Footer.jsx          
 │   ├── data/
-│   │   └── electionData.js     # AI system prompt + election knowledge base
+│   │   └── electionData.js     # System prompt + knowledge base
+│   ├── hooks/
+│   │   └── useChat.js          # Custom chat hook
+│   ├── services/
+│   │   └── groqApi.js          # API logic & Fallbacks
 │   ├── App.jsx                 # Root component + routing
 │   ├── main.jsx                # Vite entry point
 │   └── index.css               # Global styles + CSS variables
 ├── .env                        # API keys (never commit this)
 ├── .env.example                # Safe template to share
-├── .gitignore
 ├── index.html
 ├── vite.config.js
 └── package.json
 ```
 
+---
 
+## 🛡️ Security
+
+- **Content Security Policy (CSP)**: Strict default-src and connect-src policies to prevent XSS.
+- **Input Sanitization**: User input is sanitized via DOMPurify before being processed.
+- **Markdown Sanitization**: AI responses are escaped and sanitized with DOMPurify.
+- **Rate Limiting**: Custom hook throttles messages to 10 per minute to prevent abuse.
+- **Validation**: Strict validation of the Groq API key format prior to network requests.
+
+---
+
+## ⚡ Performance
+
+- **Code Splitting**: Manual chunk splitting for `lucide-react` and `marked` via Vite.
+- **Lazy Loading**: `Suspense` and `React.lazy` used for heavy components like Timeline and Chatbot.
+- **Memoization**: Every functional component is wrapped in `React.memo()`. Hooks use `useCallback` appropriately.
+- **Debouncing**: Input changes are debounced by 300ms.
+- **Token Optimization**: Trims conversation history to keep the last 10 messages only.
+
+---
+
+## 🧪 Testing
+
+The project uses **Vitest** + **React Testing Library**.
+
+To run all tests:
+```bash
+npm run test -- --run
+```
+
+To generate a coverage report (requires v8 provider, threshold set at 70%):
+```bash
+npm run test:coverage
+```
+
+---
+
+## ♿ Accessibility
+
+This project adheres to **WCAG AA** standards:
+- Extensive use of `aria-label`, `role`, and `aria-describedby` across all interactive elements.
+- Visually distinct focus rings (`*:focus-visible`) for keyboard navigation.
+- `aria-live="polite"` regions for screen readers during AI text generation.
+- Full keyboard navigation (Escape to close chat, Arrow keys to navigate Quick Chips).
+- Skip-to-content links and compliant semantic HTML elements.
+- High color contrast ratio ensuring readability.
+
+---
+
+## 🌐 Google Services Integration
+
+- **Google Analytics 4 (GA4)**: Event tracking for page views, `chat_message_sent`, and `chip_clicked`.
+- **Google Generative AI**: `@google/generative-ai` acts as an automatic fallback (Gemini 1.5 Flash) if the Groq API becomes unavailable.
+- **Google Fonts**: Uses Fraunces and DM Sans loaded via Google CDN.
+- **Progressive Web App (PWA)**: Implemented a Service Worker (`sw.js`) and `manifest.json`.
+- **SEO Elements**: Includes `robots.txt`, `sitemap.xml` mapping to `matdan.vercel.app`, and JSON-LD WebApplication structured data.
 
 ---
 
